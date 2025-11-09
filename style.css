@@ -91,6 +91,53 @@ h1 {
     transform: translateY(0);
 }
 
+.solve-btn {
+    padding: 12px 40px;
+    font-size: 1.1rem;
+    background: #28a745;
+    color: white;
+    border: 2px solid #28a745;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.solve-btn:hover {
+    background: #218838;
+    border-color: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.solve-btn:active {
+    transform: translateY(0);
+}
+
+.result {
+    margin-top: 20px;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    display: none;
+    color: #333;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.result strong {
+    color: #667eea;
+}
+
+.result small {
+    color: #666;
+    font-size: 0.9rem;
+}
+
 @media (max-width: 500px) {
     .cell {
         width: 60px;

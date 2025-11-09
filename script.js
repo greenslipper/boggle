@@ -130,8 +130,151 @@ function clearBoard() {
     cells[0].focus();
 }
 
+// Word dictionary (will be loaded from external source)
+let wordSet = new Set();
+let dictionaryLoaded = false;
+
+// Load dictionary
+async function loadDictionary() {
+    try {
+        // Using a comprehensive English word list from GitHub
+        const response = await fetch('https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt');
+        const text = await response.text();
+        const words = text.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length >= 3);
+        wordSet = new Set(words);
+        dictionaryLoaded = true;
+        console.log(`Dictionary loaded: ${wordSet.size} words`);
+    } catch (error) {
+        console.error('Failed to load dictionary:', error);
+        alert('Failed to load dictionary. Please check your internet connection.');
+    }
+}
+
+// Get board state as 2D array
+function getBoardState() {
+    const cells = document.querySelectorAll('.cell');
+    const board = [];
+    for (let i = 0; i < 4; i++) {
+        board[i] = [];
+        for (let j = 0; j < 4; j++) {
+            const cellValue = cells[i * 4 + j].value.toUpperCase();
+            board[i][j] = cellValue || '';
+        }
+    }
+    return board;
+}
+
+// Get all adjacent neighbors for a cell (including diagonals)
+function getNeighbors(row, col) {
+    const neighbors = [];
+    const directions = [
+        [-1, -1], [-1, 0], [-1, 1],  // top row
+        [0, -1],           [0, 1],    // middle row
+        [1, -1],  [1, 0],  [1, 1]     // bottom row
+    ];
+
+    for (const [dr, dc] of directions) {
+        const newRow = row + dr;
+        const newCol = col + dc;
+        if (newRow >= 0 && newRow < 4 && newCol >= 0 && newCol < 4) {
+            neighbors.push([newRow, newCol]);
+        }
+    }
+    return neighbors;
+}
+
+// DFS to find all valid words on the board
+function findAllWords(board) {
+    const foundWords = new Set();
+    const visited = Array(4).fill(null).map(() => Array(4).fill(false));
+
+    function dfs(row, col, currentWord, path) {
+        // Mark as visited
+        visited[row][col] = true;
+
+        // Add current cell to word
+        const cellValue = board[row][col];
+        currentWord += cellValue;
+
+        // Check if current word is valid (3+ letters)
+        if (currentWord.length >= 3 && wordSet.has(currentWord)) {
+            foundWords.add(currentWord);
+        }
+
+        // Continue searching if word could potentially be extended
+        // (optimization: could add prefix checking here with a trie)
+        if (currentWord.length < 20) {  // reasonable max word length
+            const neighbors = getNeighbors(row, col);
+            for (const [newRow, newCol] of neighbors) {
+                if (!visited[newRow][newCol] && board[newRow][newCol]) {
+                    dfs(newRow, newCol, currentWord, [...path, [newRow, newCol]]);
+                }
+            }
+        }
+
+        // Backtrack
+        visited[row][col] = false;
+    }
+
+    // Start DFS from each cell
+    for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+            if (board[i][j]) {
+                dfs(i, j, '', [[i, j]]);
+            }
+        }
+    }
+
+    return Array.from(foundWords);
+}
+
+// Find longest word
+async function findLongestWord() {
+    if (!dictionaryLoaded) {
+        alert('Loading dictionary... Please wait and try again.');
+        loadDictionary();
+        return;
+    }
+
+    const board = getBoardState();
+
+    // Check if board has any letters
+    const hasLetters = board.some(row => row.some(cell => cell !== ''));
+    if (!hasLetters) {
+        alert('Please fill in some letters on the board first!');
+        return;
+    }
+
+    // Show loading message
+    const resultDiv = document.getElementById('result');
+    resultDiv.textContent = 'Searching for longest word...';
+    resultDiv.style.display = 'block';
+
+    // Use setTimeout to allow UI to update
+    setTimeout(() => {
+        const allWords = findAllWords(board);
+
+        if (allWords.length === 0) {
+            resultDiv.textContent = 'No valid words found!';
+            return;
+        }
+
+        // Find longest word(s)
+        const longestLength = Math.max(...allWords.map(w => w.length));
+        const longestWords = allWords.filter(w => w.length === longestLength);
+
+        // Display result
+        if (longestWords.length === 1) {
+            resultDiv.innerHTML = `<strong>Longest word:</strong> ${longestWords[0]} (${longestLength} letters)<br><small>Found ${allWords.length} total words</small>`;
+        } else {
+            resultDiv.innerHTML = `<strong>Longest words (${longestLength} letters):</strong><br>${longestWords.join(', ')}<br><small>Found ${allWords.length} total words</small>`;
+        }
+    }, 10);
+}
+
 // Initialize the board when page loads
 document.addEventListener('DOMContentLoaded', () => {
     createBoard();
     document.querySelector('.cell').focus();
+    loadDictionary();
 });

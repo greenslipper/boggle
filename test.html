@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boggle Algorithm Test</title>
+</head>
+<body>
+    <h1>Boggle Algorithm Test</h1>
+    <div id="output"></div>
+
+    <script>
+        // Simplified test version of the algorithm
+        let wordSet = new Set();
+
+        // Small test dictionary
+        const testWords = [
+            'CAT', 'CATS', 'TEA', 'EAT', 'ATE', 'SAT', 'SET',
+            'ACE', 'CAST', 'EAST', 'TEST', 'SATE', 'SEAT', 'EATS',
+            'THE', 'THESE', 'TEAS', 'ACES'
+        ];
+        wordSet = new Set(testWords);
+
+        function getNeighbors(row, col) {
+            const neighbors = [];
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],           [0, 1],
+                [1, -1],  [1, 0],  [1, 1]
+            ];
+
+            for (const [dr, dc] of directions) {
+                const newRow = row + dr;
+                const newCol = col + dc;
+                if (newRow >= 0 && newRow < 4 && newCol >= 0 && newCol < 4) {
+                    neighbors.push([newRow, newCol]);
+                }
+            }
+            return neighbors;
+        }
+
+        function findAllWords(board) {
+            const foundWords = new Set();
+            const visited = Array(4).fill(null).map(() => Array(4).fill(false));
+
+            function dfs(row, col, currentWord, path) {
+                visited[row][col] = true;
+                const cellValue = board[row][col];
+                currentWord += cellValue;
+
+                if (currentWord.length >= 3 && wordSet.has(currentWord)) {
+                    foundWords.add(currentWord);
+                    console.log(`Found word: ${currentWord}, Path: ${JSON.stringify(path)}`);
+                }
+
+                if (currentWord.length < 20) {
+                    const neighbors = getNeighbors(row, col);
+                    for (const [newRow, newCol] of neighbors) {
+                        if (!visited[newRow][newCol] && board[newRow][newCol]) {
+                            dfs(newRow, newCol, currentWord, [...path, [newRow, newCol]]);
+                        }
+                    }
+                }
+
+                visited[row][col] = false;
+            }
+
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    if (board[i][j]) {
+                        dfs(i, j, '', [[i, j]]);
+                    }
+                }
+            }
+
+            return Array.from(foundWords);
+        }
+
+        // Test Case 1: Simple board
+        console.log('=== Test Case 1 ===');
+        const board1 = [
+            ['C', 'A', 'T', 'S'],
+            ['E', 'S', 'E', 'A'],
+            ['T', 'E', 'A', 'T'],
+            ['X', 'X', 'X', 'X']
+        ];
+        const words1 = findAllWords(board1);
+        console.log('Board 1 words found:', words1);
+        console.log('Longest:', words1.reduce((a, b) => a.length > b.length ? a : b, ''));
+
+        // Test Case 2: Board with QU
+        console.log('\n=== Test Case 2 ===');
+        wordSet.add('QUEEN');
+        wordSet.add('QUE');
+        const board2 = [
+            ['QU', 'E', 'E', 'N'],
+            ['A', 'B', 'C', 'D'],
+            ['E', 'F', 'G', 'H'],
+            ['I', 'J', 'K', 'L']
+        ];
+        const words2 = findAllWords(board2);
+        console.log('Board 2 words found:', words2);
+
+        // Test Case 3: Check adjacency rules (diagonal allowed)
+        console.log('\n=== Test Case 3: Testing Adjacency ===');
+        const board3 = [
+            ['C', 'X', 'X', 'X'],
+            ['X', 'A', 'X', 'X'],
+            ['X', 'X', 'T', 'X'],
+            ['X', 'X', 'X', 'X']
+        ];
+        const words3 = findAllWords(board3);
+        console.log('Board 3 words found (should include CAT via diagonals):', words3);
+        console.log('CAT found?', words3.includes('CAT') ? 'YES ✓' : 'NO ✗');
+
+        // Test Case 4: No reusing cells
+        console.log('\n=== Test Case 4: No Cell Reuse ===');
+        const board4 = [
+            ['C', 'A', 'X', 'X'],
+            ['T', 'X', 'X', 'X'],
+            ['X', 'X', 'X', 'X'],
+            ['X', 'X', 'X', 'X']
+        ];
+        const words4 = findAllWords(board4);
+        console.log('Board 4 words found:', words4);
+        console.log('Should have CAT but not CATA:', words4);
+
+        // Display results
+        const output = document.getElementById('output');
+        output.innerHTML = `
+            <h2>Test Results:</h2>
+            <p><strong>Test 1 - Simple Board:</strong> Found ${words1.length} words. Longest: ${words1.reduce((a, b) => a.length > b.length ? a : b, '')}</p>
+            <p>Words: ${words1.join(', ')}</p>
+
+            <p><strong>Test 2 - QU Handling:</strong> Found ${words2.length} words</p>
+            <p>Words: ${words2.join(', ')}</p>
+
+            <p><strong>Test 3 - Diagonal Adjacency:</strong> ${words3.includes('CAT') ? '✓ PASS' : '✗ FAIL'}</p>
+            <p>Words: ${words3.join(', ')}</p>
+
+            <p><strong>Test 4 - No Cell Reuse:</strong> Found ${words4.length} words</p>
+            <p>Words: ${words4.join(', ')}</p>
+        `;
+    </script>
+</body>
+</html>
