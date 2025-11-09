@@ -32,6 +32,9 @@ h1 {
 
 .left-panel {
     flex: 0 0 auto;
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
 }
 
 .right-panel {
@@ -128,6 +131,12 @@ h1 {
     100% {
         transform: scale(1);
         box-shadow: 0 0 20px rgba(255, 107, 107, 0.6);
+    }
+}
+
+@keyframes drawLine {
+    to {
+        stroke-dashoffset: 0;
     }
 }
 
@@ -314,6 +323,12 @@ h1 {
 .clickable-word:hover {
     color: #5568d3;
     font-weight: bold;
+}
+
+.no-definition-word {
+    color: #999;
+    cursor: default;
+    font-style: italic;
 }
 
 .definition-display {
