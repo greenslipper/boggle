@@ -193,6 +193,116 @@ h1 {
     word-wrap: break-word;
 }
 
+.clickable-word {
+    color: #667eea;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.clickable-word:hover {
+    color: #5568d3;
+    font-weight: bold;
+}
+
+.definition-display {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9ff;
+    border-left: 4px solid #667eea;
+    border-radius: 6px;
+    display: none;
+    text-align: left;
+}
+
+.loading {
+    color: #667eea;
+    font-style: italic;
+    text-align: center;
+}
+
+.definition-content {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.definition-word {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #667eea;
+    margin-bottom: 8px;
+}
+
+.phonetic {
+    color: #888;
+    font-style: italic;
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+}
+
+.meaning-section {
+    margin-bottom: 15px;
+}
+
+.part-of-speech {
+    font-weight: bold;
+    color: #764ba2;
+    font-style: italic;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+.definition-item {
+    margin-bottom: 8px;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+.definition-number {
+    color: #667eea;
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.example {
+    margin-top: 4px;
+    color: #666;
+    font-style: italic;
+    font-size: 0.9rem;
+    padding-left: 20px;
+}
+
+.definition-error {
+    color: #666;
+    padding: 10px 0;
+}
+
+.error-note {
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 5px;
+}
+
+.close-definition {
+    margin-top: 12px;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.close-definition:hover {
+    background: #5568d3;
+}
+
 @media (max-width: 500px) {
     .cell {
         width: 60px;

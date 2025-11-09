@@ -280,11 +280,13 @@ async function findLongestWord() {
         // Build HTML output
         let html = '<div class="result-summary">';
         if (longestWords.length === 1) {
-            html += `<strong>Longest word:</strong> ${longestWords[0]} (${longestLength} letters)<br>`;
+            html += `<strong>Longest word:</strong> <span class="clickable-word" onclick="showDefinition('${longestWords[0]}')">${longestWords[0]}</span> (${longestLength} letters)<br>`;
         } else {
-            html += `<strong>Longest words (${longestLength} letters):</strong><br>${longestWords.join(', ')}<br>`;
+            const clickableWords = longestWords.map(w => `<span class="clickable-word" onclick="showDefinition('${w}')">${w}</span>`).join(', ');
+            html += `<strong>Longest words (${longestLength} letters):</strong><br>${clickableWords}<br>`;
         }
         html += `<small>Found ${allWords.length} total words</small>`;
+        html += `<div id="definition-display" class="definition-display"></div>`;
         html += `<button class="expand-btn" onclick="toggleWordList()">Show All Words</button>`;
         html += '</div>';
 
@@ -320,6 +322,80 @@ function toggleWordList() {
         wordList.style.display = 'none';
         button.textContent = 'Show All Words';
     }
+}
+
+// Show definition for a word
+async function showDefinition(word) {
+    const definitionDiv = document.getElementById('definition-display');
+    definitionDiv.innerHTML = '<div class="loading">Loading definition...</div>';
+    definitionDiv.style.display = 'block';
+
+    try {
+        // Try Free Dictionary API first
+        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
+
+        if (!response.ok) {
+            throw new Error('Definition not found');
+        }
+
+        const data = await response.json();
+
+        if (data && data.length > 0) {
+            const entry = data[0];
+            let html = `<div class="definition-content">`;
+            html += `<div class="definition-word">${word}</div>`;
+
+            // Add phonetic if available
+            if (entry.phonetic) {
+                html += `<div class="phonetic">${entry.phonetic}</div>`;
+            }
+
+            // Add meanings
+            if (entry.meanings && entry.meanings.length > 0) {
+                entry.meanings.slice(0, 3).forEach((meaning, idx) => {
+                    html += `<div class="meaning-section">`;
+                    html += `<div class="part-of-speech">${meaning.partOfSpeech}</div>`;
+
+                    if (meaning.definitions && meaning.definitions.length > 0) {
+                        meaning.definitions.slice(0, 2).forEach((def, defIdx) => {
+                            html += `<div class="definition-item">`;
+                            html += `<span class="definition-number">${defIdx + 1}.</span> ${def.definition}`;
+                            if (def.example) {
+                                html += `<div class="example">"${def.example}"</div>`;
+                            }
+                            html += `</div>`;
+                        });
+                    }
+                    html += `</div>`;
+                });
+            }
+
+            html += `<button class="close-definition" onclick="closeDefinition()">Close</button>`;
+            html += `</div>`;
+
+            definitionDiv.innerHTML = html;
+        } else {
+            throw new Error('No definition found');
+        }
+    } catch (error) {
+        definitionDiv.innerHTML = `
+            <div class="definition-content">
+                <div class="definition-word">${word}</div>
+                <div class="definition-error">
+                    <p>Definition not available.</p>
+                    <p class="error-note">This word is valid in Scrabble but may not have an online definition available.</p>
+                </div>
+                <button class="close-definition" onclick="closeDefinition()">Close</button>
+            </div>
+        `;
+    }
+}
+
+// Close definition display
+function closeDefinition() {
+    const definitionDiv = document.getElementById('definition-display');
+    definitionDiv.style.display = 'none';
+    definitionDiv.innerHTML = '';
 }
 
 // Initialize the board when page loads
