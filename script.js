@@ -260,17 +260,66 @@ async function findLongestWord() {
             return;
         }
 
+        // Sort words alphabetically
+        allWords.sort();
+
+        // Group by length
+        const wordsByLength = {};
+        allWords.forEach(word => {
+            const len = word.length;
+            if (!wordsByLength[len]) {
+                wordsByLength[len] = [];
+            }
+            wordsByLength[len].push(word);
+        });
+
         // Find longest word(s)
         const longestLength = Math.max(...allWords.map(w => w.length));
-        const longestWords = allWords.filter(w => w.length === longestLength);
+        const longestWords = wordsByLength[longestLength];
 
-        // Display result
+        // Build HTML output
+        let html = '<div class="result-summary">';
         if (longestWords.length === 1) {
-            resultDiv.innerHTML = `<strong>Longest word:</strong> ${longestWords[0]} (${longestLength} letters)<br><small>Found ${allWords.length} total words</small>`;
+            html += `<strong>Longest word:</strong> ${longestWords[0]} (${longestLength} letters)<br>`;
         } else {
-            resultDiv.innerHTML = `<strong>Longest words (${longestLength} letters):</strong><br>${longestWords.join(', ')}<br><small>Found ${allWords.length} total words</small>`;
+            html += `<strong>Longest words (${longestLength} letters):</strong><br>${longestWords.join(', ')}<br>`;
         }
+        html += `<small>Found ${allWords.length} total words</small>`;
+        html += `<button class="expand-btn" onclick="toggleWordList()">Show All Words</button>`;
+        html += '</div>';
+
+        // Add expandable word list
+        html += '<div id="word-list" class="word-list" style="display: none;">';
+
+        // Sort lengths in descending order
+        const lengths = Object.keys(wordsByLength).map(Number).sort((a, b) => b - a);
+
+        lengths.forEach(len => {
+            const words = wordsByLength[len];
+            html += `<div class="word-group">`;
+            html += `<h4>${len}-letter words (${words.length}):</h4>`;
+            html += `<div class="word-items">${words.join(', ')}</div>`;
+            html += `</div>`;
+        });
+
+        html += '</div>';
+
+        resultDiv.innerHTML = html;
     }, 10);
+}
+
+// Toggle word list visibility
+function toggleWordList() {
+    const wordList = document.getElementById('word-list');
+    const button = document.querySelector('.expand-btn');
+
+    if (wordList.style.display === 'none') {
+        wordList.style.display = 'block';
+        button.textContent = 'Hide All Words';
+    } else {
+        wordList.style.display = 'none';
+        button.textContent = 'Show All Words';
+    }
 }
 
 // Initialize the board when page loads

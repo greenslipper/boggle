@@ -120,7 +120,7 @@ h1 {
     background: white;
     border-radius: 10px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
-    max-width: 400px;
+    max-width: 600px;
     margin-left: auto;
     margin-right: auto;
     display: none;
@@ -136,6 +136,61 @@ h1 {
 .result small {
     color: #666;
     font-size: 0.9rem;
+    display: block;
+    margin: 10px 0;
+}
+
+.result-summary {
+    margin-bottom: 15px;
+}
+
+.expand-btn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.expand-btn:hover {
+    background: #5568d3;
+    transform: translateY(-1px);
+}
+
+.expand-btn:active {
+    transform: translateY(0);
+}
+
+.word-list {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #e0e0e0;
+    max-height: 500px;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.word-group {
+    margin-bottom: 20px;
+}
+
+.word-group h4 {
+    color: #667eea;
+    font-size: 1rem;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.word-items {
+    color: #555;
+    font-size: 0.95rem;
+    line-height: 1.8;
+    word-wrap: break-word;
 }
 
 @media (max-width: 500px) {
