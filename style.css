@@ -91,6 +91,29 @@ h1 {
     transform: translateY(0);
 }
 
+.challenge-btn {
+    padding: 12px 30px;
+    font-size: 1rem;
+    background: #ff6b6b;
+    color: white;
+    border: 2px solid #ff6b6b;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.challenge-btn:hover {
+    background: #ee5a52;
+    border-color: #ee5a52;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+}
+
+.challenge-btn:active {
+    transform: translateY(0);
+}
+
 .solve-btn {
     padding: 12px 40px;
     font-size: 1.1rem;
@@ -301,6 +324,32 @@ h1 {
 
 .close-definition:hover {
     background: #5568d3;
+}
+
+.success-message {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+.success-message strong {
+    color: #155724;
+}
+
+.error-message {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+.error-message strong {
+    color: #721c24;
 }
 
 @media (max-width: 500px) {

@@ -87,30 +87,30 @@ function handleKeydown(e) {
     }
 }
 
+// Official Boggle dice configuration (shared constant)
+const BOGGLE_DICE = [
+    ['A', 'A', 'E', 'E', 'G', 'N'],
+    ['A', 'B', 'B', 'J', 'O', 'O'],
+    ['A', 'C', 'H', 'O', 'P', 'S'],
+    ['A', 'F', 'F', 'K', 'P', 'S'],
+    ['A', 'O', 'O', 'T', 'T', 'W'],
+    ['C', 'I', 'M', 'O', 'T', 'U'],
+    ['D', 'E', 'I', 'L', 'R', 'X'],
+    ['D', 'E', 'L', 'R', 'V', 'Y'],
+    ['D', 'I', 'S', 'T', 'T', 'Y'],
+    ['E', 'E', 'G', 'H', 'N', 'W'],
+    ['E', 'E', 'I', 'N', 'S', 'U'],
+    ['E', 'H', 'R', 'T', 'V', 'W'],
+    ['E', 'I', 'O', 'S', 'S', 'T'],
+    ['E', 'L', 'R', 'T', 'T', 'Y'],
+    ['H', 'I', 'M', 'N', 'U', 'QU'],
+    ['H', 'L', 'N', 'N', 'R', 'Z']
+];
+
 // Randomize board with letters
 function randomizeBoard() {
-    // Official "New Boggle" dice configuration (16 dice, each with 6 sides)
-    const boggleDice = [
-        ['A', 'A', 'E', 'E', 'G', 'N'],
-        ['A', 'B', 'B', 'J', 'O', 'O'],
-        ['A', 'C', 'H', 'O', 'P', 'S'],
-        ['A', 'F', 'F', 'K', 'P', 'S'],
-        ['A', 'O', 'O', 'T', 'T', 'W'],
-        ['C', 'I', 'M', 'O', 'T', 'U'],
-        ['D', 'E', 'I', 'L', 'R', 'X'],
-        ['D', 'E', 'L', 'R', 'V', 'Y'],
-        ['D', 'I', 'S', 'T', 'T', 'Y'],
-        ['E', 'E', 'G', 'H', 'N', 'W'],
-        ['E', 'E', 'I', 'N', 'S', 'U'],
-        ['E', 'H', 'R', 'T', 'V', 'W'],
-        ['E', 'I', 'O', 'S', 'S', 'T'],
-        ['E', 'L', 'R', 'T', 'T', 'Y'],
-        ['H', 'I', 'M', 'N', 'U', 'QU'],
-        ['H', 'L', 'N', 'N', 'R', 'Z']
-    ];
-
     // Shuffle the dice to randomize their positions on the board
-    const shuffledDice = [...boggleDice].sort(() => Math.random() - 0.5);
+    const shuffledDice = [...BOGGLE_DICE].sort(() => Math.random() - 0.5);
 
     const cells = document.querySelectorAll('.cell');
     cells.forEach((cell, index) => {
@@ -119,6 +119,101 @@ function randomizeBoard() {
         const randomFace = die[Math.floor(Math.random() * 6)];
         cell.value = randomFace;
     });
+}
+
+// Generate a board that has exactly one 8-letter word
+async function generateEightLetterChallenge() {
+    if (!dictionaryLoaded) {
+        alert('Dictionary still loading... Please wait a moment and try again.');
+        return;
+    }
+
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = '<div class="loading">Generating 8-letter challenge board... This may take a moment.</div>';
+    resultDiv.style.display = 'block';
+
+    let attempts = 0;
+    const maxAttempts = 1000; // Limit attempts to prevent infinite loop
+    let foundBoard = null;
+    let eightLetterWord = null;
+
+    // Use setTimeout to allow UI updates
+    setTimeout(async () => {
+        while (attempts < maxAttempts && !foundBoard) {
+            attempts++;
+
+            // Generate random board
+            const shuffledDice = [...BOGGLE_DICE].sort(() => Math.random() - 0.5);
+            const board = [];
+            for (let i = 0; i < 4; i++) {
+                board[i] = [];
+                for (let j = 0; j < 4; j++) {
+                    const die = shuffledDice[i * 4 + j];
+                    board[i][j] = die[Math.floor(Math.random() * 6)];
+                }
+            }
+
+            // Find all words on this board
+            const allWords = findAllWords(board);
+
+            // Check for exactly one 8-letter word
+            const eightLetterWords = allWords.filter(w => w.length === 8);
+            const longerWords = allWords.filter(w => w.length > 8);
+
+            if (eightLetterWords.length === 1 && longerWords.length === 0) {
+                foundBoard = board;
+                eightLetterWord = eightLetterWords[0];
+                break;
+            }
+
+            // Update progress every 100 attempts
+            if (attempts % 100 === 0) {
+                resultDiv.innerHTML = `<div class="loading">Generating 8-letter challenge... Attempt ${attempts}/${maxAttempts}</div>`;
+                // Allow UI to update
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+        }
+
+        if (foundBoard) {
+            // Set the board
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach((cell, index) => {
+                const row = Math.floor(index / 4);
+                const col = index % 4;
+                cell.value = foundBoard[row][col];
+            });
+
+            resultDiv.innerHTML = `
+                <div class="success-message">
+                    <strong>✓ 8-Letter Challenge Board Generated!</strong><br>
+                    <small>Found in ${attempts} attempts</small><br>
+                    <small>This board contains exactly one 8-letter word. Can you find it?</small><br>
+                    <button class="expand-btn" onclick="revealChallengeSolution('${eightLetterWord}')">Reveal Solution</button>
+                </div>
+            `;
+        } else {
+            resultDiv.innerHTML = `
+                <div class="error-message">
+                    <strong>Challenge generation timed out</strong><br>
+                    <small>Tried ${attempts} boards but couldn't find one with exactly one 8-letter word.</small><br>
+                    <small>Try again or use the regular Random button.</small>
+                </div>
+            `;
+        }
+    }, 100);
+}
+
+// Reveal the challenge solution
+function revealChallengeSolution(word) {
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = `
+        <div class="success-message">
+            <strong>8-Letter Word Solution:</strong><br>
+            <span class="clickable-word" onclick="showDefinition('${word}')">${word}</span><br>
+            <small>Click the word to see its definition</small>
+            <div id="definition-display" class="definition-display"></div>
+        </div>
+    `;
 }
 
 // Clear all cells
