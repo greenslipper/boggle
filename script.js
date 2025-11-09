@@ -121,6 +121,16 @@ function randomizeBoard() {
     });
 }
 
+// Check if a word has a definition in the dictionary API
+async function hasDefinition(word) {
+    try {
+        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
+        return response.ok;
+    } catch (error) {
+        return false;
+    }
+}
+
 // Generate a board that has exactly one 8-letter word
 async function generateEightLetterChallenge() {
     if (!dictionaryLoaded) {
@@ -161,14 +171,20 @@ async function generateEightLetterChallenge() {
             const longerWords = allWords.filter(w => w.length > 8);
 
             if (eightLetterWords.length === 1 && longerWords.length === 0) {
-                foundBoard = board;
-                eightLetterWord = eightLetterWords[0];
-                break;
+                // Verify the 8-letter word has a definition
+                const candidateWord = eightLetterWords[0];
+                const wordHasDefinition = await hasDefinition(candidateWord);
+
+                if (wordHasDefinition) {
+                    foundBoard = board;
+                    eightLetterWord = candidateWord;
+                    break;
+                }
             }
 
             // Update progress every 100 attempts
             if (attempts % 100 === 0) {
-                resultDiv.innerHTML = `<div class="loading">Generating 8-letter challenge... Attempt ${attempts}/${maxAttempts}</div>`;
+                resultDiv.innerHTML = `<div class="loading">Generating 8-letter challenge... Attempt ${attempts}/${maxAttempts}<br><small>Verifying word definitions...</small></div>`;
                 // Allow UI to update
                 await new Promise(resolve => setTimeout(resolve, 0));
             }
@@ -187,7 +203,7 @@ async function generateEightLetterChallenge() {
                 <div class="success-message">
                     <strong>✓ 8-Letter Challenge Board Generated!</strong><br>
                     <small>Found in ${attempts} attempts</small><br>
-                    <small>This board contains exactly one 8-letter word. Can you find it?</small><br>
+                    <small>This board contains exactly one 8-letter word with a definition. Can you find it?</small><br>
                     <button class="expand-btn" onclick="revealChallengeSolution('${eightLetterWord}')">Reveal Solution</button>
                 </div>
             `;
@@ -195,7 +211,7 @@ async function generateEightLetterChallenge() {
             resultDiv.innerHTML = `
                 <div class="error-message">
                     <strong>Challenge generation timed out</strong><br>
-                    <small>Tried ${attempts} boards but couldn't find one with exactly one 8-letter word.</small><br>
+                    <small>Tried ${attempts} boards but couldn't find one with exactly one 8-letter word that has a definition.</small><br>
                     <small>Try again or use the regular Random button.</small>
                 </div>
             `;
