@@ -90,7 +90,9 @@ Open `test.html` in a browser for visual test results.
 
 ### Dictionary Source
 
-Uses the `dwyl/english-words` dictionary from GitHub (370,000+ words).
+Uses the official **SOWPODS Scrabble word list** from the `scrabblewords/scrabblewords` repository.
+
+SOWPODS is the official Scrabble dictionary combining British (OSW) and American (OSPD) word lists, making it the authoritative source for competitive word games.
 
 ### Performance
 

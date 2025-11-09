@@ -137,16 +137,17 @@ let dictionaryLoaded = false;
 // Load dictionary
 async function loadDictionary() {
     try {
-        // Using a comprehensive English word list from GitHub
-        const response = await fetch('https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt');
+        // Using official Scrabble word list (SOWPODS)
+        // SOWPODS = combination of British and American Scrabble dictionaries
+        const response = await fetch('https://raw.githubusercontent.com/scrabblewords/scrabblewords/main/words/British/sowpods.txt');
         const text = await response.text();
         const words = text.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length >= 3);
         wordSet = new Set(words);
         dictionaryLoaded = true;
-        console.log(`Dictionary loaded: ${wordSet.size} words`);
+        console.log(`Dictionary loaded: ${wordSet.size} SOWPODS Scrabble words`);
     } catch (error) {
         console.error('Failed to load dictionary:', error);
-        alert('Failed to load dictionary. Please check your internet connection.');
+        alert('Failed to load Scrabble dictionary. Please check your internet connection.');
     }
 }
 
