@@ -295,9 +295,13 @@ function getNeighbors(row, col) {
     return neighbors;
 }
 
+// Global variable to store word paths
+let wordPaths = new Map();
+
 // DFS to find all valid words on the board
 function findAllWords(board) {
     const foundWords = new Set();
+    wordPaths = new Map(); // Reset paths
     const visited = Array(4).fill(null).map(() => Array(4).fill(false));
 
     function dfs(row, col, currentWord, path) {
@@ -307,10 +311,15 @@ function findAllWords(board) {
         // Add current cell to word
         const cellValue = board[row][col];
         currentWord += cellValue;
+        const newPath = [...path, [row, col]];
 
         // Check if current word is valid (3+ letters)
         if (currentWord.length >= 3 && wordSet.has(currentWord)) {
             foundWords.add(currentWord);
+            // Store the path for this word (keep first found path)
+            if (!wordPaths.has(currentWord)) {
+                wordPaths.set(currentWord, newPath);
+            }
         }
 
         // Continue searching if word could potentially be extended
@@ -319,7 +328,7 @@ function findAllWords(board) {
             const neighbors = getNeighbors(row, col);
             for (const [newRow, newCol] of neighbors) {
                 if (!visited[newRow][newCol] && board[newRow][newCol]) {
-                    dfs(newRow, newCol, currentWord, [...path, [newRow, newCol]]);
+                    dfs(newRow, newCol, currentWord, newPath);
                 }
             }
         }
@@ -332,7 +341,7 @@ function findAllWords(board) {
     for (let i = 0; i < 4; i++) {
         for (let j = 0; j < 4; j++) {
             if (board[i][j]) {
-                dfs(i, j, '', [[i, j]]);
+                dfs(i, j, '', []);
             }
         }
     }
@@ -391,9 +400,9 @@ async function findLongestWord() {
         // Build HTML output
         let html = '<div class="result-summary">';
         if (longestWords.length === 1) {
-            html += `<strong>Longest word:</strong> <span class="clickable-word" onclick="showDefinition('${longestWords[0]}')">${longestWords[0]}</span> (${longestLength} letters)<br>`;
+            html += `<strong>Longest word:</strong> <span class="clickable-word" onclick="showDefinition('${longestWords[0]}')">${longestWords[0]}</span> <span class="eye-icon" onclick="showWordPath('${longestWords[0]}')" title="Show path on board">👁️</span> (${longestLength} letters)<br>`;
         } else {
-            const clickableWords = longestWords.map(w => `<span class="clickable-word" onclick="showDefinition('${w}')">${w}</span>`).join(', ');
+            const clickableWords = longestWords.map(w => `<span class="clickable-word" onclick="showDefinition('${w}')">${w}</span> <span class="eye-icon" onclick="showWordPath('${w}')" title="Show path on board">👁️</span>`).join(', ');
             html += `<strong>Longest words (${longestLength} letters):</strong><br>${clickableWords}<br>`;
         }
         html += `<small>Found ${allWords.length} total words</small>`;
@@ -411,7 +420,11 @@ async function findLongestWord() {
             const words = wordsByLength[len];
             html += `<div class="word-group">`;
             html += `<h4>${len}-letter words (${words.length}):</h4>`;
-            html += `<div class="word-items">${words.join(', ')}</div>`;
+            html += `<div class="word-items">`;
+            words.forEach(word => {
+                html += `<span class="word-with-eye">${word} <span class="eye-icon" onclick="showWordPath('${word}')" title="Show path on board">👁️</span></span>`;
+            });
+            html += `</div>`;
             html += `</div>`;
         });
 
@@ -419,6 +432,46 @@ async function findLongestWord() {
 
         resultDiv.innerHTML = html;
     }, 10);
+}
+
+// Show word path on the board
+function showWordPath(word) {
+    // Clear any previous highlighting
+    clearWordPath();
+
+    const path = wordPaths.get(word);
+    if (!path) {
+        console.log('No path found for word:', word);
+        return;
+    }
+
+    const cells = document.querySelectorAll('.cell');
+
+    // Highlight each cell in the path with a number
+    path.forEach(([row, col], index) => {
+        const cellIndex = row * 4 + col;
+        const cell = cells[cellIndex];
+
+        // Add highlight class and number
+        cell.classList.add('path-highlight');
+        cell.dataset.pathNumber = index + 1;
+
+        // Add animation delay
+        cell.style.animationDelay = `${index * 0.1}s`;
+    });
+
+    // Auto-clear after 3 seconds
+    setTimeout(clearWordPath, 3000);
+}
+
+// Clear word path highlighting
+function clearWordPath() {
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach(cell => {
+        cell.classList.remove('path-highlight');
+        delete cell.dataset.pathNumber;
+        cell.style.animationDelay = '';
+    });
 }
 
 // Toggle word list visibility
