@@ -9,6 +9,8 @@ A 4x4 Boggle board application with automatic word finding capabilities.
 - **Keyboard Navigation**: Use arrow keys to move between cells
 - **Random Board Generator**: Uses official Boggle dice configuration
 - **Longest Word Finder**: Finds the longest valid English word on the board
+- **Word Definitions**: Click on any longest word to see its definition, pronunciation, and usage examples
+- **Expandable Word List**: View all found words categorized by length and alphabetically sorted
 
 ## Boggle Rules Implemented
 
@@ -55,7 +57,15 @@ The algorithm finds **40 valid words**, with "CLEAR" being the longest (5 letter
    - Click "Random" to generate a random Boggle board
    - Manually enter letters into cells
 3. Click "Find Longest Word" to find the longest valid word
-4. Results show the longest word and total word count
+4. Results show:
+   - Longest word(s) - clickable to view definition
+   - Total word count
+   - "Show All Words" button to expand full categorized list
+5. Click on any longest word to see its definition with:
+   - Pronunciation (phonetic)
+   - Part of speech
+   - Multiple definitions
+   - Usage examples
 
 ## Testing
 
