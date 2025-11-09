@@ -90,9 +90,11 @@ Open `test.html` in a browser for visual test results.
 
 ### Dictionary Source
 
-Uses the official **SOWPODS Scrabble word list** from the `scrabblewords/scrabblewords` repository.
+Uses the official **SOWPODS Scrabble word list** (267,627 words with 3+ letters).
 
 SOWPODS is the official Scrabble dictionary combining British (OSW) and American (OSPD) word lists, making it the authoritative source for competitive word games.
+
+Source: `jesstess/Scrabble` GitHub repository
 
 ### Performance
 

@@ -139,7 +139,7 @@ async function loadDictionary() {
     try {
         // Using official Scrabble word list (SOWPODS)
         // SOWPODS = combination of British and American Scrabble dictionaries
-        const response = await fetch('https://raw.githubusercontent.com/scrabblewords/scrabblewords/main/words/British/sowpods.txt');
+        const response = await fetch('https://raw.githubusercontent.com/jesstess/Scrabble/master/scrabble/sowpods.txt');
         const text = await response.text();
         const words = text.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length >= 3);
         wordSet = new Set(words);
