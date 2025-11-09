@@ -8,19 +8,28 @@
 </head>
 <body>
     <div class="container">
-        <h1>4x4 Letter Board</h1>
-        <div class="board" id="board"></div>
-        <div class="button-group">
-            <button class="action-btn" onclick="randomizeBoard()">Random</button>
-            <button class="action-btn" onclick="clearBoard()">Clear Board</button>
+        <h1>Boggle Solver</h1>
+        <div class="main-layout">
+            <div class="left-panel">
+                <div class="board" id="board"></div>
+            </div>
+            <div class="right-panel">
+                <div class="controls">
+                    <h2>Controls</h2>
+                    <div class="button-group">
+                        <button class="action-btn" onclick="randomizeBoard()">Random</button>
+                        <button class="action-btn" onclick="clearBoard()">Clear Board</button>
+                    </div>
+                    <div class="button-group">
+                        <button class="challenge-btn" onclick="generateEightLetterChallenge()">8-Letter Challenge</button>
+                    </div>
+                    <div class="button-group">
+                        <button class="solve-btn" onclick="findLongestWord()">Find Longest Word</button>
+                    </div>
+                </div>
+                <div id="result" class="result"></div>
+            </div>
         </div>
-        <div class="button-group">
-            <button class="challenge-btn" onclick="generateEightLetterChallenge()">8-Letter Challenge</button>
-        </div>
-        <div class="button-group">
-            <button class="solve-btn" onclick="findLongestWord()">Find Longest Word</button>
-        </div>
-        <div id="result" class="result"></div>
     </div>
     <script src="script.js"></script>
 </body>
