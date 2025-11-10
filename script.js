@@ -669,6 +669,226 @@ function closeDefinition() {
     definitionDiv.innerHTML = '';
 }
 
+// Embed a word (forced, skipping dictionary check)
+async function embedWordForce(forcedWord) {
+    const word = forcedWord || document.getElementById('embed-word-input').value.trim().toUpperCase().replace(/Q(?!U)/g, 'QU');
+    await embedWordInternal(word, true);
+}
+
+// Embed a specific word in the board
+async function embedWord() {
+    const input = document.getElementById('embed-word-input');
+    const word = input.value.trim().toUpperCase().replace(/Q(?!U)/g, 'QU');
+    await embedWordInternal(word, false);
+}
+
+// Internal function to embed a word
+async function embedWordInternal(word, skipDictionaryCheck) {
+    const resultDiv = document.getElementById('result');
+
+    if (!word) {
+        resultDiv.innerHTML = '<div class="error-message"><strong>Error:</strong> Please enter a word to embed</div>';
+        resultDiv.style.display = 'block';
+        return;
+    }
+
+    if (word.length < 3) {
+        resultDiv.innerHTML = '<div class="error-message"><strong>Error:</strong> Word must be at least 3 letters long</div>';
+        resultDiv.style.display = 'block';
+        return;
+    }
+
+    // Split word into individual letters (treating QU as one unit)
+    const letters = [];
+    for (let i = 0; i < word.length; i++) {
+        if (word[i] === 'Q' && word[i + 1] === 'U') {
+            letters.push('QU');
+            i++; // Skip the U
+        } else {
+            letters.push(word[i]);
+        }
+    }
+
+    if (letters.length > 16) {
+        resultDiv.innerHTML = '<div class="error-message"><strong>Error:</strong> Word is too long for a 4x4 board (max 16 cells)</div>';
+        resultDiv.style.display = 'block';
+        return;
+    }
+
+    // Check if word has a definition in the dictionary (unless forced)
+    if (!skipDictionaryCheck) {
+        resultDiv.innerHTML = '<div class="loading">Checking if word exists in dictionary...</div>';
+        resultDiv.style.display = 'block';
+
+        const wordHasDefinition = await hasDefinition(word);
+
+        if (!wordHasDefinition) {
+            resultDiv.innerHTML = `<div class="error-message"><strong>Warning:</strong> "${word}" not found in dictionary<br><small>This word may not be valid. Are you sure you want to continue?</small><br><button class="action-btn" style="margin-top: 10px;" onclick="embedWordForce('${word}')">Embed Anyway</button></div>`;
+            resultDiv.style.display = 'block';
+            return;
+        }
+    }
+
+    // Show loading message
+    resultDiv.innerHTML = '<div class="loading">Finding valid path for word...</div>';
+    resultDiv.style.display = 'block';
+
+    // Try to find a valid path for the word on the board
+    const path = findValidPath(letters);
+
+    if (!path) {
+        resultDiv.innerHTML = `<div class="error-message"><strong>Error:</strong> Cannot create "${word}" on a 4x4 Boggle board<br><small>The word requires too many letters or cannot form a valid adjacent path</small></div>`;
+        resultDiv.style.display = 'block';
+        return;
+    }
+
+    // Create board with the embedded word
+    const board = createBoardWithWord(path, letters);
+
+    // Fill the board
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach((cell, index) => {
+        const row = Math.floor(index / 4);
+        const col = index % 4;
+        cell.value = board[row][col];
+    });
+
+    resultDiv.innerHTML = `<div class="success-message"><strong>✓ Word embedded successfully!</strong><br>"${word}" has been placed on the board<br><small>Click "Find Longest Word" to see all words</small></div>`;
+    resultDiv.style.display = 'block';
+
+    // Clear input
+    const input = document.getElementById('embed-word-input');
+    if (input) {
+        input.value = '';
+    }
+}
+
+// Find a valid path for the word on a 4x4 board
+function findValidPath(letters) {
+    // Try to find a path that connects all letters adjacently
+    const numLetters = letters.length;
+
+    // Create array of all possible starting positions
+    const startingPositions = [];
+    for (let row = 0; row < 4; row++) {
+        for (let col = 0; col < 4; col++) {
+            startingPositions.push([row, col]);
+        }
+    }
+
+    // Shuffle starting positions to randomize placement
+    startingPositions.sort(() => Math.random() - 0.5);
+
+    // Try starting from each position in random order
+    for (const [startRow, startCol] of startingPositions) {
+        const paths = findAllPathsFromStart(startRow, startCol, numLetters);
+        if (paths.length > 0) {
+            // Randomly select one of the valid paths
+            return paths[Math.floor(Math.random() * paths.length)];
+        }
+    }
+
+    return null;
+}
+
+// Find all possible paths starting from a specific cell
+function findAllPathsFromStart(startRow, startCol, length) {
+    const visited = Array(4).fill(null).map(() => Array(4).fill(false));
+    const allPaths = [];
+    const currentPath = [];
+
+    function dfs(row, col) {
+        if (currentPath.length === length) {
+            // Found a complete path, save a copy
+            allPaths.push([...currentPath]);
+            return;
+        }
+
+        visited[row][col] = true;
+        currentPath.push([row, col]);
+
+        // Get neighbors and shuffle them for more randomness
+        const neighbors = getNeighbors(row, col);
+        neighbors.sort(() => Math.random() - 0.5);
+
+        // Try all adjacent cells
+        for (const [newRow, newCol] of neighbors) {
+            if (!visited[newRow][newCol]) {
+                dfs(newRow, newCol);
+            }
+        }
+
+        // Backtrack
+        visited[row][col] = false;
+        currentPath.pop();
+    }
+
+    dfs(startRow, startCol);
+    return allPaths;
+}
+
+// Create a board with the word embedded and fill remaining cells
+function createBoardWithWord(path, letters) {
+    // Try to assign dice to positions such that the embedded word is possible
+    // This is a constraint satisfaction problem
+
+    const board = Array(4).fill(null).map(() => Array(4).fill(null));
+    const usedDice = new Set();
+
+    // First, try to find dice that contain the letters we need for the embedded word
+    const diceAssignments = new Map(); // position -> die index
+
+    // For each letter in the embedded word, find a die that has that letter
+    for (let i = 0; i < path.length; i++) {
+        const [row, col] = path[i];
+        const neededLetter = letters[i];
+        const position = row * 4 + col;
+
+        // Find a die that has this letter and hasn't been used yet
+        let foundDie = -1;
+        for (let dieIdx = 0; dieIdx < BOGGLE_DICE.length; dieIdx++) {
+            if (!usedDice.has(dieIdx) && BOGGLE_DICE[dieIdx].includes(neededLetter)) {
+                foundDie = dieIdx;
+                usedDice.add(dieIdx);
+                diceAssignments.set(position, dieIdx);
+                board[row][col] = neededLetter;
+                break;
+            }
+        }
+
+        // If we couldn't find a die with this letter, the word can't be made with real Boggle dice
+        // But we'll allow it anyway and just place the letter
+        if (foundDie === -1) {
+            board[row][col] = neededLetter;
+        }
+    }
+
+    // Now fill the remaining positions with unused dice
+    const availableDice = [];
+    for (let i = 0; i < BOGGLE_DICE.length; i++) {
+        if (!usedDice.has(i)) {
+            availableDice.push(i);
+        }
+    }
+
+    // Shuffle the available dice
+    availableDice.sort(() => Math.random() - 0.5);
+
+    let availableIndex = 0;
+    for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+            if (board[i][j] === null && availableIndex < availableDice.length) {
+                const dieIdx = availableDice[availableIndex];
+                const die = BOGGLE_DICE[dieIdx];
+                board[i][j] = die[Math.floor(Math.random() * 6)];
+                availableIndex++;
+            }
+        }
+    }
+
+    return board;
+}
+
 // Initialize the board when page loads
 document.addEventListener('DOMContentLoaded', () => {
     createBoard();
