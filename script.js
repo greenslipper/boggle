@@ -226,7 +226,6 @@ async function generateEightLetterChallenge() {
             resultDiv.innerHTML = `
                 <div class="success-message">
                     <strong>✓ 8-Letter Challenge Board Generated!</strong><br>
-                    <small>Found in ${attempts} attempts</small><br>
                     <small>This board contains exactly one 8-letter word. Can you find it?</small><br>
                     <button class="expand-btn" onclick="revealChallengeSolution('${eightLetterWord}')">Reveal Solution</button>
                 </div>
