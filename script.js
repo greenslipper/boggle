@@ -138,30 +138,58 @@ async function generateEightLetterChallenge() {
         return;
     }
 
+    if (!frequencyDataLoaded || eightLetterWordsList.length === 0) {
+        alert('Word frequency data still loading... Please wait a moment and try again.');
+        return;
+    }
+
     const resultDiv = document.getElementById('result');
     resultDiv.innerHTML = '<div class="loading">Generating 8-letter challenge board... This may take a moment.</div>';
     resultDiv.style.display = 'block';
 
-    let attempts = 0;
-    const maxAttempts = 1000; // Limit attempts to prevent infinite loop
-    let foundBoard = null;
-    let eightLetterWord = null;
-
     // Use setTimeout to allow UI updates
     setTimeout(async () => {
+        let foundBoard = null;
+        let eightLetterWord = null;
+        let attempts = 0;
+        const maxAttempts = 100; // Try up to 100 different boards
+
+        // Pick a random 8-letter word from our list
+        const randomIndex = Math.floor(Math.random() * eightLetterWordsList.length);
+        const targetWord = eightLetterWordsList[randomIndex].word;
+        console.log(`Attempting to hide word: ${targetWord}`);
+
+        // Split word into letters (handling QU as one unit)
+        const letters = [];
+        for (let i = 0; i < targetWord.length; i++) {
+            if (targetWord[i] === 'Q' && targetWord[i + 1] === 'U') {
+                letters.push('QU');
+                i++; // Skip the U
+            } else {
+                letters.push(targetWord[i]);
+            }
+        }
+
+        // Try to find a valid board with this word hidden
         while (attempts < maxAttempts && !foundBoard) {
             attempts++;
 
-            // Generate random board
-            const shuffledDice = [...BOGGLE_DICE].sort(() => Math.random() - 0.5);
-            const board = [];
-            for (let i = 0; i < 4; i++) {
-                board[i] = [];
-                for (let j = 0; j < 4; j++) {
-                    const die = shuffledDice[i * 4 + j];
-                    board[i][j] = die[Math.floor(Math.random() * 6)];
-                }
+            // Find a valid path for the word
+            const path = findValidPath(letters);
+            if (!path) {
+                // This word can't be placed on a 4x4 board
+                resultDiv.innerHTML = `
+                    <div class="error-message">
+                        <strong>Unable to place word on board</strong><br>
+                        <small>The word "${targetWord}" cannot form a valid path on a 4x4 board.</small><br>
+                        <small>Please try again to pick a different word.</small>
+                    </div>
+                `;
+                return;
             }
+
+            // Create board with the embedded word
+            const board = createBoardWithWord(path, letters);
 
             // Find all words on this board
             const allWords = findAllWords(board);
@@ -170,21 +198,17 @@ async function generateEightLetterChallenge() {
             const eightLetterWords = allWords.filter(w => w.length === 8);
             const longerWords = allWords.filter(w => w.length > 8);
 
-            if (eightLetterWords.length === 1 && longerWords.length === 0) {
-                // Verify the 8-letter word has a definition
-                const candidateWord = eightLetterWords[0];
-                const wordHasDefinition = await hasDefinition(candidateWord);
+            console.log(`Attempt ${attempts}: Found ${eightLetterWords.length} 8-letter words and ${longerWords.length} longer words`);
 
-                if (wordHasDefinition) {
-                    foundBoard = board;
-                    eightLetterWord = candidateWord;
-                    break;
-                }
+            if (eightLetterWords.length === 1 && longerWords.length === 0 && eightLetterWords[0] === targetWord) {
+                foundBoard = board;
+                eightLetterWord = targetWord;
+                break;
             }
 
-            // Update progress every 100 attempts
-            if (attempts % 100 === 0) {
-                resultDiv.innerHTML = `<div class="loading">Generating 8-letter challenge... Attempt ${attempts}/${maxAttempts}<br><small>Verifying word definitions...</small></div>`;
+            // Update progress every 10 attempts
+            if (attempts % 10 === 0) {
+                resultDiv.innerHTML = `<div class="loading">Generating 8-letter challenge... Attempt ${attempts}/${maxAttempts}<br><small>Hiding word: ${targetWord}</small></div>`;
                 // Allow UI to update
                 await new Promise(resolve => setTimeout(resolve, 0));
             }
@@ -203,7 +227,7 @@ async function generateEightLetterChallenge() {
                 <div class="success-message">
                     <strong>✓ 8-Letter Challenge Board Generated!</strong><br>
                     <small>Found in ${attempts} attempts</small><br>
-                    <small>This board contains exactly one 8-letter word with a definition. Can you find it?</small><br>
+                    <small>This board contains exactly one 8-letter word. Can you find it?</small><br>
                     <button class="expand-btn" onclick="revealChallengeSolution('${eightLetterWord}')">Reveal Solution</button>
                 </div>
             `;
@@ -211,8 +235,8 @@ async function generateEightLetterChallenge() {
             resultDiv.innerHTML = `
                 <div class="error-message">
                     <strong>Challenge generation timed out</strong><br>
-                    <small>Tried ${attempts} boards but couldn't find one with exactly one 8-letter word that has a definition.</small><br>
-                    <small>Try again or use the regular Random button.</small>
+                    <small>Tried ${attempts} boards but couldn't find one with only "${targetWord}" as the 8-letter word.</small><br>
+                    <small>Try again to pick a different word.</small>
                 </div>
             `;
         }
@@ -245,6 +269,11 @@ function clearBoard() {
 let wordSet = new Set();
 let dictionaryLoaded = false;
 
+// Word frequency data (uses per million)
+let wordFrequencyMap = new Map();
+let frequencyDataLoaded = false;
+let eightLetterWordsList = []; // Store 8-letter words for challenge generation
+
 // Load dictionary
 async function loadDictionary() {
     try {
@@ -259,6 +288,47 @@ async function loadDictionary() {
     } catch (error) {
         console.error('Failed to load dictionary:', error);
         alert('Failed to load Scrabble dictionary. Please check your internet connection.');
+    }
+}
+
+// Load word frequency data
+async function loadWordFrequencies() {
+    try {
+        const response = await fetch('https://raw.githubusercontent.com/aparrish/wordfreq-en-25000/master/wordfreq-en-25000-log.json');
+        const data = await response.json();
+
+        // Convert log frequencies to uses per million
+        // Formula: uses_per_million = e^(log_value) × 1,000,000
+        data.forEach(([word, logFreq]) => {
+            const usesPerMillion = Math.exp(logFreq) * 1000000;
+            wordFrequencyMap.set(word.toUpperCase(), usesPerMillion);
+
+            // Count letters for Boggle (QU counts as one letter)
+            let letterCount = 0;
+            for (let i = 0; i < word.length; i++) {
+                if (word[i] === 'q' && word[i + 1] === 'u') {
+                    letterCount++;
+                    i++; // Skip the 'u'
+                } else {
+                    letterCount++;
+                }
+            }
+
+            // Store 8-letter words for challenge generation
+            if (letterCount === 8) {
+                eightLetterWordsList.push({
+                    word: word.toUpperCase(),
+                    frequency: usesPerMillion
+                });
+            }
+        });
+
+        frequencyDataLoaded = true;
+        console.log(`Word frequency data loaded: ${wordFrequencyMap.size} words`);
+        console.log(`8-letter words available for challenges: ${eightLetterWordsList.length}`);
+    } catch (error) {
+        console.error('Failed to load word frequency data:', error);
+        // Don't alert - this is optional data
     }
 }
 
@@ -616,6 +686,30 @@ async function showDefinition(word) {
             let html = `<div class="definition-content">`;
             html += `<div class="definition-word">${word}</div>`;
 
+            // Add word frequency if available
+            console.log('Looking up frequency for:', word.toUpperCase());
+            console.log('Frequency map size:', wordFrequencyMap.size);
+            console.log('Frequency data loaded:', frequencyDataLoaded);
+            const frequency = wordFrequencyMap.get(word.toUpperCase());
+            console.log('Frequency found:', frequency);
+            if (frequency !== undefined) {
+                // Format the frequency nicely
+                let freqText;
+                if (frequency >= 1000) {
+                    freqText = `${Math.round(frequency).toLocaleString()} uses per million words`;
+                } else if (frequency >= 1) {
+                    freqText = `${frequency.toFixed(1)} uses per million words`;
+                } else if (frequency >= 0.1) {
+                    freqText = `${frequency.toFixed(2)} uses per million words`;
+                } else {
+                    freqText = `${frequency.toFixed(3)} uses per million words`;
+                }
+                console.log('Adding frequency to HTML:', freqText);
+                html += `<div class="word-frequency" style="font-size: 0.85em; color: #666; margin: 5px 0; font-style: italic;">${freqText}</div>`;
+            } else {
+                console.log('No frequency data found for this word');
+            }
+
             // Add phonetic if available
             if (entry.phonetic) {
                 html += `<div class="phonetic">${entry.phonetic}</div>`;
@@ -649,9 +743,27 @@ async function showDefinition(word) {
             throw new Error('No definition found');
         }
     } catch (error) {
+        // Check if we have frequency data even without definition
+        const frequency = wordFrequencyMap.get(word.toUpperCase());
+        let frequencyHTML = '';
+        if (frequency !== undefined) {
+            let freqText;
+            if (frequency >= 1000) {
+                freqText = `${Math.round(frequency).toLocaleString()} uses per million words`;
+            } else if (frequency >= 1) {
+                freqText = `${frequency.toFixed(1)} uses per million words`;
+            } else if (frequency >= 0.1) {
+                freqText = `${frequency.toFixed(2)} uses per million words`;
+            } else {
+                freqText = `${frequency.toFixed(3)} uses per million words`;
+            }
+            frequencyHTML = `<div class="word-frequency" style="font-size: 0.85em; color: #666; margin: 5px 0; font-style: italic;">${freqText}</div>`;
+        }
+
         definitionDiv.innerHTML = `
             <div class="definition-content">
                 <div class="definition-word">${word}</div>
+                ${frequencyHTML}
                 <div class="definition-error">
                     <p>Definition not available.</p>
                     <p class="error-note">This word is valid in Scrabble but may not have an online definition available.</p>
@@ -687,7 +799,7 @@ async function embedWordInternal(word, skipDictionaryCheck) {
     const resultDiv = document.getElementById('result');
 
     if (!word) {
-        resultDiv.innerHTML = '<div class="error-message"><strong>Error:</strong> Please enter a word to embed</div>';
+        resultDiv.innerHTML = '<div class="error-message"><strong>Error:</strong> Please enter a word to hide</div>';
         resultDiv.style.display = 'block';
         return;
     }
@@ -723,7 +835,7 @@ async function embedWordInternal(word, skipDictionaryCheck) {
         const wordHasDefinition = await hasDefinition(word);
 
         if (!wordHasDefinition) {
-            resultDiv.innerHTML = `<div class="error-message"><strong>Warning:</strong> "${word}" not found in dictionary<br><small>This word may not be valid. Are you sure you want to continue?</small><br><button class="action-btn" style="margin-top: 10px;" onclick="embedWordForce('${word}')">Embed Anyway</button></div>`;
+            resultDiv.innerHTML = `<div class="error-message"><strong>Warning:</strong> "${word}" not found in dictionary<br><small>This word may not be valid. Are you sure you want to continue?</small><br><button class="action-btn" style="margin-top: 10px;" onclick="embedWordForce('${word}')">Hide Anyway</button></div>`;
             resultDiv.style.display = 'block';
             return;
         }
@@ -753,7 +865,7 @@ async function embedWordInternal(word, skipDictionaryCheck) {
         cell.value = board[row][col];
     });
 
-    resultDiv.innerHTML = `<div class="success-message"><strong>✓ Word embedded successfully!</strong><br>"${word}" has been placed on the board<br><small>Click "Find Longest Word" to see all words</small></div>`;
+    resultDiv.innerHTML = `<div class="success-message"><strong>✓ Word hidden successfully!</strong><br>"${word}" has been placed on the board<br><small>Click "Find Longest Word" to see all words</small></div>`;
     resultDiv.style.display = 'block';
 
     // Clear input
@@ -894,4 +1006,5 @@ document.addEventListener('DOMContentLoaded', () => {
     createBoard();
     document.querySelector('.cell').focus();
     loadDictionary();
+    loadWordFrequencies();
 });
